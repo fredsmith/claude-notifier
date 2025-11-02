@@ -1,0 +1,20 @@
+{
+  "name": "claude-notifier",
+  "version": "1.0.0",
+  "description": "Discord notifications for Claude Code hooks",
+  "type": "module",
+  "scripts": {
+    "register-hooks": "tsx src/cli/register-hooks.ts",
+    "unregister-hooks": "tsx src/cli/register-hooks.ts --unregister",
+    "test:input": "echo '{\"prompt\":\"test prompt\"}' | tsx src/hooks/input-requested.ts",
+    "test:task": "echo '{\"prompt\":\"test\",\"tools\":[\"Read\",\"Edit\"],\"duration\":1234,\"status\":\"success\"}' | tsx src/hooks/task-completed.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "tsx": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
