@@ -47,8 +47,8 @@ async function main() {
     if (isUnregister) {
       // Remove hooks
       if (settings.hooks) {
-        delete settings.hooks['user-prompt-submit'];
-        delete settings.hooks['agent-response-end'];
+        delete settings.hooks['UserPromptSubmit'];
+        delete settings.hooks['Stop'];
 
         // Remove hooks object if empty
         if (Object.keys(settings.hooks).length === 0) {
@@ -64,28 +64,42 @@ async function main() {
         settings.hooks = {};
       }
 
-      const inputHook = `npx tsx ${join(projectRoot, 'src/hooks/input-requested.ts')}`;
-      const taskHook = `npx tsx ${join(projectRoot, 'src/hooks/task-completed.ts')}`;
+      const inputHookCommand = `npx tsx ${join(projectRoot, 'src/hooks/input-requested.ts')}`;
+      const taskHookCommand = `npx tsx ${join(projectRoot, 'src/hooks/task-completed.ts')}`;
 
       // Check if hooks already exist
-      const inputExists = settings.hooks['user-prompt-submit'];
-      const taskExists = settings.hooks['agent-response-end'];
+      const inputExists = settings.hooks['UserPromptSubmit'];
+      const taskExists = settings.hooks['Stop'];
 
       if (inputExists || taskExists) {
         console.log('\n⚠️  Warning: Hooks already registered:');
-        if (inputExists) console.log('   - user-prompt-submit:', inputExists);
-        if (taskExists) console.log('   - agent-response-end:', taskExists);
+        if (inputExists) console.log('   - UserPromptSubmit:', JSON.stringify(inputExists));
+        if (taskExists) console.log('   - Stop:', JSON.stringify(taskExists));
         console.log('\n   Overwriting with new paths...');
       }
 
-      settings.hooks['user-prompt-submit'] = inputHook;
-      settings.hooks['agent-response-end'] = taskHook;
+      // Set hooks in the correct format (array with matcher and hooks)
+      settings.hooks['UserPromptSubmit'] = [{
+        matcher: '',
+        hooks: [{
+          type: 'command',
+          command: inputHookCommand
+        }]
+      }];
+
+      settings.hooks['Stop'] = [{
+        matcher: '',
+        hooks: [{
+          type: 'command',
+          command: taskHookCommand
+        }]
+      }];
 
       writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
       console.log('\n✅ Hooks registered successfully!');
       console.log('\n📌 Registered hooks:');
-      console.log('   - user-prompt-submit:', inputHook);
-      console.log('   - agent-response-end:', taskHook);
+      console.log('   - UserPromptSubmit:', inputHookCommand);
+      console.log('   - Stop:', taskHookCommand);
     }
   } catch (error) {
     console.error('\n❌ Error:', error);
