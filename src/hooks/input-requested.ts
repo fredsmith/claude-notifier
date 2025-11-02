@@ -2,13 +2,13 @@
 import { stdin } from 'process';
 import { getUsageStats } from '../lib/usage-checker.js';
 import { send } from '../lib/discord-notifier.js';
-import type { HookData, DiscordMessage } from '../lib/types.js';
+import type { UserPromptHookData, DiscordMessage } from '../lib/types.js';
 
 async function main() {
   try {
     // Read hook data from stdin
     const data = await readStdin();
-    const hookData: HookData = data ? JSON.parse(data) : {};
+    const hookData: UserPromptHookData = data ? JSON.parse(data) : {};
 
     // Get usage statistics
     const usageStats = await getUsageStats();

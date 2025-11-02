@@ -2,30 +2,34 @@
 import { stdin } from 'process';
 import { getUsageStats } from '../lib/usage-checker.js';
 import { send } from '../lib/discord-notifier.js';
+import { parseTranscript } from '../lib/transcript-parser.js';
 async function main() {
     try {
         // Read hook data from stdin
         const data = await readStdin();
-        // Debug: log what we received
-        console.error('Raw stdin data:', data);
         const hookData = data ? JSON.parse(data) : {};
-        // Debug: log parsed hook data
-        console.error('Parsed hook data:', JSON.stringify(hookData, null, 2));
+        // Parse the transcript to get session data
+        let sessionData = {
+            tools: [],
+        };
+        if (hookData.transcript_path) {
+            sessionData = parseTranscript(hookData.transcript_path);
+        }
         // Get usage statistics
         const usageStats = await getUsageStats();
         // Determine status
-        const isSuccess = hookData.status === 'success' || !hookData.error;
+        const isSuccess = !sessionData.error;
         const title = isSuccess ? '🟢 Task Completed' : '🔴 Task Failed';
         const color = isSuccess ? 0x00FF00 : 0xFF0000; // Green or Red
         // Format prompt preview
-        const promptPreview = hookData.prompt
-            ? hookData.prompt.substring(0, 100) + (hookData.prompt.length > 100 ? '...' : '')
+        const promptPreview = sessionData.prompt
+            ? sessionData.prompt.substring(0, 100) + (sessionData.prompt.length > 100 ? '...' : '')
             : 'No prompt provided';
         // Format tools
-        const toolsUsed = formatTools(hookData.tools || []);
+        const toolsUsed = formatTools(sessionData.tools);
         // Format duration
-        const duration = hookData.duration
-            ? `${(hookData.duration / 1000).toFixed(1)}s`
+        const duration = sessionData.duration
+            ? `${(sessionData.duration / 1000).toFixed(1)}s`
             : 'Unknown';
         // Build Discord message fields
         const fields = [
@@ -38,7 +42,7 @@ async function main() {
             fields.push({ name: '✅ Status', value: 'Success' });
         }
         else {
-            fields.push({ name: '❌ Error', value: hookData.error || 'Unknown error' });
+            fields.push({ name: '❌ Error', value: sessionData.error || 'Unknown error' });
         }
         // Add usage stats if available
         if (usageStats) {

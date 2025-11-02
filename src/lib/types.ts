@@ -12,14 +12,28 @@ export interface DiscordMessage {
   timestamp: string;
 }
 
-// Hook data from Claude Code (minimal structure)
-export interface HookData {
+// Hook data from Claude Code Stop hook
+export interface StopHookData {
+  session_id?: string;
+  transcript_path?: string;
+  cwd?: string;
+  permission_mode?: string;
+  hook_event_name?: string;
+  stop_hook_active?: boolean;
+}
+
+// Hook data from UserPromptSubmit hook
+export interface UserPromptHookData {
   prompt?: string;
-  tools?: string[];
+  hook_event_name?: string;
+}
+
+// Extracted session data from transcript
+export interface SessionData {
+  prompt?: string;
+  tools: string[];
   duration?: number;
-  status?: string;
   error?: string;
-  timestamp?: string;
 }
 
 // ccusage JSON output structure
