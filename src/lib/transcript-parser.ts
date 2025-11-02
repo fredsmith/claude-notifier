@@ -14,36 +14,55 @@ interface TranscriptEntry {
 
 /**
  * Parses a Claude Code transcript JSONL file to extract session information
+ * Returns data for the LAST user message and subsequent tool usage
  */
 export function parseTranscript(transcriptPath: string): SessionData {
   try {
     const content = readFileSync(transcriptPath, 'utf-8');
     const lines = content.trim().split('\n');
 
-    let userPrompt = '';
-    const tools: string[] = [];
-    let startTime: number | undefined;
-    let endTime: number | undefined;
-    let error: string | undefined;
+    let lastUserPrompt = '';
+    let lastUserTimestamp: number | undefined;
+    const allEntries: TranscriptEntry[] = [];
 
+    // First pass: parse all entries and find the last user message
     for (const line of lines) {
       if (!line.trim()) continue;
-
       const entry: TranscriptEntry = JSON.parse(line);
+      allEntries.push(entry);
 
-      // Capture the first user message as the prompt
-      if (entry.type === 'user' && entry.message?.role === 'user' && !userPrompt) {
+      // Track the most recent user message
+      if (entry.type === 'user' && entry.message?.role === 'user') {
         const content = entry.message.content;
         if (typeof content === 'string') {
-          userPrompt = content;
-        }
-        if (entry.timestamp) {
-          startTime = new Date(entry.timestamp).getTime();
+          lastUserPrompt = content;
+          if (entry.timestamp) {
+            lastUserTimestamp = new Date(entry.timestamp).getTime();
+          }
         }
       }
+    }
 
-      // Track tool usage from assistant messages
-      if (entry.type === 'assistant' && entry.message?.content && Array.isArray(entry.message.content)) {
+    // Second pass: collect tools used AFTER the last user message
+    const tools: string[] = [];
+    let collectingTools = false;
+    let endTime: number | undefined;
+
+    for (const entry of allEntries) {
+      // Start collecting tools after we see the last user message
+      if (
+        entry.type === 'user' &&
+        entry.message?.role === 'user' &&
+        entry.timestamp &&
+        lastUserTimestamp &&
+        new Date(entry.timestamp).getTime() === lastUserTimestamp
+      ) {
+        collectingTools = true;
+        continue;
+      }
+
+      // Collect tools from assistant messages after the last user message
+      if (collectingTools && entry.type === 'assistant' && entry.message?.content && Array.isArray(entry.message.content)) {
         for (const item of entry.message.content) {
           if (item.type === 'tool_use' && item.name) {
             tools.push(item.name);
@@ -51,20 +70,20 @@ export function parseTranscript(transcriptPath: string): SessionData {
         }
       }
 
-      // Track end time (use the last timestamp)
-      if (entry.timestamp) {
+      // Track the last timestamp
+      if (collectingTools && entry.timestamp) {
         endTime = new Date(entry.timestamp).getTime();
       }
     }
 
-    // Calculate duration if we have start and end times
-    const duration = startTime && endTime ? endTime - startTime : undefined;
+    // Calculate duration from last user message to end
+    const duration = lastUserTimestamp && endTime ? endTime - lastUserTimestamp : undefined;
 
     return {
-      prompt: userPrompt || undefined,
+      prompt: lastUserPrompt || undefined,
       tools,
       duration,
-      error,
+      error: undefined,
     };
   } catch (err) {
     console.error('Failed to parse transcript:', err);
