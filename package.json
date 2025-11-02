@@ -4,10 +4,11 @@
   "description": "Discord notifications for Claude Code hooks",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "register-hooks": "tsx src/cli/register-hooks.ts",
     "unregister-hooks": "tsx src/cli/register-hooks.ts --unregister",
     "test:input": "echo '{\"prompt\":\"test prompt\"}' | tsx src/hooks/input-requested.ts",
-    "test:task": "echo '{\"prompt\":\"test\",\"tools\":[\"Read\",\"Edit\"],\"duration\":1234,\"status\":\"success\"}' | tsx src/hooks/task-completed.ts"
+    "test:task": "echo '{\"session_id\":\"test\",\"transcript_path\":\"/tmp/test.jsonl\",\"hook_event_name\":\"Stop\"}' | tsx src/hooks/task-completed.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
