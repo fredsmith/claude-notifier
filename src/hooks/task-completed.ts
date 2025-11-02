@@ -34,6 +34,13 @@ async function main() {
       ? sessionData.prompt.substring(0, 100) + (sessionData.prompt.length > 100 ? '...' : '')
       : 'No prompt provided';
 
+    // Format response preview (last 200 chars to show the end)
+    const responsePreview = sessionData.response
+      ? (sessionData.response.length > 200
+          ? '...' + sessionData.response.substring(sessionData.response.length - 200)
+          : sessionData.response)
+      : 'No response';
+
     // Format tools
     const toolsUsed = formatTools(sessionData.tools);
 
@@ -45,6 +52,7 @@ async function main() {
     // Build Discord message fields
     const fields = [
       { name: '📝 Prompt', value: promptPreview },
+      { name: '💬 Response', value: responsePreview },
       { name: '🔧 Tools', value: toolsUsed || 'None' },
       { name: '⚡ Duration', value: duration },
     ];

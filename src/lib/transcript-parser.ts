@@ -43,13 +43,14 @@ export function parseTranscript(transcriptPath: string): SessionData {
       }
     }
 
-    // Second pass: collect tools used AFTER the last user message
+    // Second pass: collect tools and response AFTER the last user message
     const tools: string[] = [];
+    const responseTexts: string[] = [];
     let collectingTools = false;
     let endTime: number | undefined;
 
     for (const entry of allEntries) {
-      // Start collecting tools after we see the last user message
+      // Start collecting after we see the last user message
       if (
         entry.type === 'user' &&
         entry.message?.role === 'user' &&
@@ -61,11 +62,14 @@ export function parseTranscript(transcriptPath: string): SessionData {
         continue;
       }
 
-      // Collect tools from assistant messages after the last user message
+      // Collect tools and text from assistant messages after the last user message
       if (collectingTools && entry.type === 'assistant' && entry.message?.content && Array.isArray(entry.message.content)) {
         for (const item of entry.message.content) {
           if (item.type === 'tool_use' && item.name) {
             tools.push(item.name);
+          }
+          if (item.type === 'text' && item.text) {
+            responseTexts.push(item.text);
           }
         }
       }
@@ -76,11 +80,15 @@ export function parseTranscript(transcriptPath: string): SessionData {
       }
     }
 
+    // Combine all response texts
+    const response = responseTexts.join('\n').trim();
+
     // Calculate duration from last user message to end
     const duration = lastUserTimestamp && endTime ? endTime - lastUserTimestamp : undefined;
 
     return {
       prompt: lastUserPrompt || undefined,
+      response: response || undefined,
       tools,
       duration,
       error: undefined,

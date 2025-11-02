@@ -36,9 +36,8 @@ async function main() {
         copyFileSync(settingsPath, backupPath);
         console.log('💾 Backed up settings to:', backupPath);
         if (isUnregister) {
-            // Remove hooks
+            // Remove hook
             if (settings.hooks) {
-                delete settings.hooks['UserPromptSubmit'];
                 delete settings.hooks['Stop'];
                 // Remove hooks object if empty
                 if (Object.keys(settings.hooks).length === 0) {
@@ -46,34 +45,22 @@ async function main() {
                 }
             }
             writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-            console.log('\n✅ Hooks unregistered successfully!');
+            console.log('\n✅ Hook unregistered successfully!');
         }
         else {
-            // Register hooks
+            // Register hook
             if (!settings.hooks) {
                 settings.hooks = {};
             }
-            const inputHookCommand = `npx tsx ${join(projectRoot, 'src/hooks/input-requested.ts')}`;
             const taskHookCommand = `npx tsx ${join(projectRoot, 'src/hooks/task-completed.ts')}`;
-            // Check if hooks already exist
-            const inputExists = settings.hooks['UserPromptSubmit'];
+            // Check if hook already exists
             const taskExists = settings.hooks['Stop'];
-            if (inputExists || taskExists) {
-                console.log('\n⚠️  Warning: Hooks already registered:');
-                if (inputExists)
-                    console.log('   - UserPromptSubmit:', JSON.stringify(inputExists));
-                if (taskExists)
-                    console.log('   - Stop:', JSON.stringify(taskExists));
-                console.log('\n   Overwriting with new paths...');
+            if (taskExists) {
+                console.log('\n⚠️  Warning: Hook already registered:');
+                console.log('   - Stop:', JSON.stringify(taskExists));
+                console.log('\n   Overwriting with new path...');
             }
-            // Set hooks in the correct format (array with matcher and hooks)
-            settings.hooks['UserPromptSubmit'] = [{
-                    matcher: '',
-                    hooks: [{
-                            type: 'command',
-                            command: inputHookCommand
-                        }]
-                }];
+            // Set hook in the correct format (array with matcher and hooks)
             settings.hooks['Stop'] = [{
                     matcher: '',
                     hooks: [{
@@ -82,9 +69,8 @@ async function main() {
                         }]
                 }];
             writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-            console.log('\n✅ Hooks registered successfully!');
-            console.log('\n📌 Registered hooks:');
-            console.log('   - UserPromptSubmit:', inputHookCommand);
+            console.log('\n✅ Hook registered successfully!');
+            console.log('\n📌 Registered hook:');
             console.log('   - Stop:', taskHookCommand);
         }
     }

@@ -31,6 +31,7 @@ export interface UserPromptHookData {
 // Extracted session data from transcript
 export interface SessionData {
   prompt?: string;
+  response?: string; // Last assistant response text
   tools: string[];
   duration?: number;
   error?: string;
