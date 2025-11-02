@@ -9,7 +9,7 @@ const WINDOW_NAME = 'usage';
 
 interface TmuxUsageData {
   percentUsed: number;
-  resetMinutes: number;
+  resetTime: string;
 }
 
 /**
@@ -86,14 +86,14 @@ async function refreshAndCapture(): Promise<TmuxUsageData | null> {
  * Parses the /usage command output from Claude Code dialog
  * Looking for patterns like:
  * - "23% used" - usage percentage under "Current session"
- * - "Resets 2:59pm (America/New_York)" - reset time
+ * - "Resets 2:59pm (America/New_York)" - reset time (returned as-is)
  */
 function parseUsageOutput(output: string): TmuxUsageData | null {
   try {
     const lines = output.split('\n');
 
     let percentUsed = 0;
-    let resetMinutes = 0;
+    let resetTime = '';
     let inCurrentSession = false;
 
     for (let i = 0; i < lines.length; i++) {
@@ -105,7 +105,7 @@ function parseUsageOutput(output: string): TmuxUsageData | null {
         continue;
       }
 
-      // If we're in the current session section, look for percentage
+      // If we're in the current session section, look for percentage and reset time
       if (inCurrentSession) {
         // Look for percentage in format: "23% used"
         const percentMatch = line.match(/(\d+)%\s+used/);
@@ -113,32 +113,11 @@ function parseUsageOutput(output: string): TmuxUsageData | null {
           percentUsed = parseInt(percentMatch[1], 10);
         }
 
-        // Look for reset time in format: "Resets 2:59pm (America/New_York)"
-        const resetMatch = line.match(/Resets\s+(\d+):(\d+)(am|pm)/i);
+        // Look for reset time line and capture the whole thing
+        // Format: " Resets 2:59pm (America/New_York)"
+        const resetMatch = line.match(/\s*(Resets\s+.+)/);
         if (resetMatch) {
-          const hours = parseInt(resetMatch[1], 10);
-          const minutes = parseInt(resetMatch[2], 10);
-          const isPM = resetMatch[3].toLowerCase() === 'pm';
-
-          // Calculate minutes until reset
-          const now = new Date();
-          const resetTime = new Date();
-          let resetHour = hours;
-          if (isPM && hours !== 12) {
-            resetHour += 12;
-          } else if (!isPM && hours === 12) {
-            resetHour = 0;
-          }
-          resetTime.setHours(resetHour, minutes, 0, 0);
-
-          // If reset time is in the past, it's tomorrow
-          if (resetTime < now) {
-            resetTime.setDate(resetTime.getDate() + 1);
-          }
-
-          const diffMs = resetTime.getTime() - now.getTime();
-          resetMinutes = Math.max(0, Math.floor(diffMs / 1000 / 60));
-
+          resetTime = resetMatch[1].trim();
           // We found both values in current session, we can stop
           break;
         }
@@ -151,8 +130,8 @@ function parseUsageOutput(output: string): TmuxUsageData | null {
     }
 
     // Return data if we found either value
-    if (percentUsed > 0 || resetMinutes > 0) {
-      return { percentUsed, resetMinutes };
+    if (percentUsed > 0 || resetTime) {
+      return { percentUsed, resetTime };
     }
 
     return null;
@@ -185,25 +164,13 @@ export async function getUsageStats(): Promise<UsageStats | null> {
     }
 
     return {
-      remainingMinutes: data.resetMinutes,
-      formattedTime: formatTime(data.resetMinutes),
       tokenPercentageUsed: data.percentUsed,
+      resetTime: data.resetTime,
     };
   } catch (error) {
     console.error('Failed to get usage stats from tmux:', error);
     return null;
   }
-}
-
-function formatTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-
-  if (hours === 0) {
-    return `${mins}m remaining until reset`;
-  }
-
-  return `${hours}h${mins}m remaining until reset`;
 }
 
 function sleep(ms: number): Promise<void> {

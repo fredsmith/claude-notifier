@@ -1,8 +1,7 @@
-// Usage statistics from ccusage
+// Usage statistics from tmux scraper
 export interface UsageStats {
-  remainingMinutes: number;
-  formattedTime: string;
   tokenPercentageUsed: number;
+  resetTime: string; // Raw string from dialog like "Resets 3pm (America/New_York)"
 }
 
 // Discord embed message structure

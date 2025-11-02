@@ -41,7 +41,7 @@ async function main() {
     if (usageStats) {
       message.fields.push({
         name: '📊 Usage Stats',
-        value: `├─ Tokens: ${usageStats.tokenPercentageUsed}% used\n└─ Reset: ${usageStats.formattedTime}`,
+        value: `├─ ${usageStats.tokenPercentageUsed}% used\n└─ ${usageStats.resetTime}`,
       });
     }
 
